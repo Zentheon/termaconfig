@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "zenconfig"
+version = "1.0.0"
+description = "Python project template using devenv."
+authors = ["Zentheon <zentheon@mailbox.org>"]
+homepage = "https://github.com/zentheon/zenconfig"
+license = "GPL-3.0"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+terminaltables3 = "^4.0.0"
+
+[tool.poetry.group.test.dependencies]
+configobj = "^5.0.9"
+pytest = "^8.4.1"
+
+[tool.pyright]
+venvPath = "./venv"
+venv = "venv"
+include = ["tests", "zenconfig"]
+
+[build-system]
+requires = ["poetry"]
+build-backend = "poetry.masonry.api"

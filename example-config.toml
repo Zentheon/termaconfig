@@ -1,0 +1,24 @@
+[config]
+name = "zenconfig"
+description = "Custom configuration settings."
+
+[section1]
+enabled = true
+option1 = "eggs", "bacon", "pancakes", "waffles"
+option2 = "super_custom_value"
+[[subsection1]]
+port = 3021
+ip = '174.192.0.34'
+
+[section2]
+enabled = false
+[[items]]
+item1 = "Golden eggs"
+item2 = "Smoked bacon"
+item3 = "Fluffy pancakes"
+item4 = "Sweet waffles"
+item5 = "Other breakfast items..."
+
+[ignored_section]
+enabled = true
+hidden_key = 42
