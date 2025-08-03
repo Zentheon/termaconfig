@@ -1,0 +1,71 @@
+# This uses the ConfigObj spec format with one key difference:
+# the '@' symbol is used as a delimiter for special formatting of
+# entries with ZenConfig. The valid options are:
+#
+# Section options:
+# @title (str): Name of the table that will be printed. Also used intuitively by
+#    other options like @type.
+# @header (list): Adds a header. Should contain up to 3 list items for column names.
+# @type (str): How the entries in the section are interpreted:
+#   list_keys: Merges all config keys into one entry.
+#   list_values: Merges all values from associated config to one entry.
+#   list_all: Merges both keys and values: 'key1 (value1), key2, (value2)'
+# @wrap (int): (@type only) Wraps value entries every provided number of items.
+# @parent (section): dot notated path of another section to merge the table into.
+# @ignore (bool): Whether to completely ignore handling tables for the section.
+# @toggle (str): Point to any boolean option in a dot-notated path that
+#   acts as @ignore if false.
+#
+# Per-item options:
+# {option}@title (str): Pretty name to use in place of the technical one.
+# {option}@note (str): Optional third column entry.
+# {option}@ignore (str): Same as for sections but per-option.
+
+[config]
+@title = General Configuration
+name = string(default='zenconfig')
+name@title = Name
+description = string(default='Default configuration settings.')
+description@title = Description
+
+[section1]
+@title = Section One
+@header = 'Option', 'Value'
+enabled = boolean(default=true)
+enabled@ignore = true
+option1 = list(default=list('lemon', 'lime', 'orange', 'grapefruit'))
+option1@title = Option 1
+option2 = string(default='default_value')
+option2@title = Option 2
+[[subsection1]]
+@parent = 'section1'
+@title = 'Secondary settings:'
+@toggle = section1.enabled
+setting = integer(min=1024, default=1234)
+setting@title = 'Port'
+ip = ip_addr
+ip@title = 'Address'
+
+[section2]
+@title = Section Two
+@header = 'Option', 'Value', 'Note'
+enabled = boolean(default=false)
+enabled@title = 'Enable section 2'
+[[items]]
+@type = list_values
+@title = Items
+@wrap = 2
+@note = "You can also add notes\nto various entries!"
+@parent = section2
+item1 = string
+item2 = string
+item3 = string
+item4 = string
+item5 = string
+
+[ignored_section]
+@ignore = true
+@title = Dont show this section!
+enabled = boolean(default=true)
+enabled@title = Enable section 2
+hidden_key = integer(min=0, max=100, default=42)
