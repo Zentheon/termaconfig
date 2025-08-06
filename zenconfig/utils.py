@@ -46,6 +46,7 @@ def sanitize_str(input_data):
             dict: Recursively sanitizes values. Returns the dict back, _not_ a string.
             int: Converts to str
             float: Converts to str
+            None: Converts to str
 
     Returns:
         str or dict: The sanitized string representation of the input data.
@@ -69,8 +70,11 @@ def sanitize_str(input_data):
     elif isinstance(input_data, int) or isinstance(input_data, float):
         # Convert numbers to strings
         return str(input_data)
+    elif input_data is None:
+        # Convert None to string
+        return str(input_data)
     else:
-        raise ValueError("Unsupported data type")
+        raise ValueError(f"Unsupported data type: {type(input_data)}")
 
 def join_wrapped_list(items, entries_per_line):
     """Joins a list into a string with items separated by commas and wrapped to multiple lines."""
@@ -99,6 +103,46 @@ def strip_quotes(input_string):
         return input_string[1:-1]
     else:
         return input_string
+
+def split_dot_notated_keys(input_dict, container_key=None):
+    """Splits keys in a dictionary that are dot-notated into nested dictionaries.
+
+    An optional variable "container_key" is available for placing children into
+    instead of directly inside it's parent.
+
+    Args:
+        input_dict (dict): The dictionary containing dot-notated keys to be split.
+
+    Returns:
+        dict: A new dictionary with the dot-notated keys replaced by nested dictionaries.
+    """
+    result = {}
+
+    def insert_into_result(key_parts, value, current_dict):
+        parent_key = key_parts[0]
+        if len(key_parts) > 1:
+            child_key = key_parts[1:]
+            # Initialization checks
+            if parent_key not in current_dict:
+                current_dict[parent_key] = {} if not container_key else {container_key: {}}
+            if container_key and container_key not in current_dict[parent_key]:
+                current_dict[parent_key][container_key] = {}
+
+            if container_key:
+                insert_into_result(child_key, value, current_dict[parent_key][container_key])
+            else:
+                insert_into_result(child_key, value, current_dict[parent_key])
+        else:
+            current_dict[parent_key] = value
+
+    for key, value in input_dict.items():
+        if isinstance(key, str) and '.' in key:
+            key_parts = key.split('.')
+            insert_into_result(key_parts, value, result)
+        else:
+            result[key] = value
+
+    return result
 
 def strip_metakeys(input_dict, delimiter):
     """Takes an input config dict and removes keys with the delimiter in them. Use the returned spec to run validation on."""

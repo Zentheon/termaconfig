@@ -19,7 +19,7 @@ version = "5.0.9"
 description = "Config file reading, writing and validation."
 optional = false
 python-versions = ">=3.7"
-groups = ["test"]
+groups = ["main"]
 files = [
     {file = "configobj-5.0.9-py2.py3-none-any.whl", hash = "sha256:1ba10c5b6ee16229c79a05047aeda2b55eb4e80d7c7d8ecf17ec1ca600c79882"},
     {file = "configobj-5.0.9.tar.gz", hash = "sha256:03c881bbf23aa07bccf1b837005975993c4ab4427ba57f959afdd9d1a2386848"},
@@ -64,6 +64,21 @@ files = [
 [package.extras]
 dev = ["pre-commit", "tox"]
 testing = ["coverage", "pytest", "pytest-benchmark"]
+
+[[package]]
+name = "printree"
+version = "0.2.1"
+description = "Pretty print python objects in a tree format."
+optional = false
+python-versions = "*"
+groups = ["main"]
+files = [
+    {file = "printree-0.2.1-py3-none-any.whl", hash = "sha256:fa86f76a6df9cf43fb9b8e6b7ca588d808ab106f082dc8dc5afe7676eeb52811"},
+    {file = "printree-0.2.1.tar.gz", hash = "sha256:6c74980256211b9f94abeb77be050d4e5992b5b1e1b147e92d10882ea16947f1"},
+]
+
+[package.extras]
+docs = ["myst-parser", "sphinx", "sphinx_autodoc_typehints", "sphinx_rtd_theme"]
 
 [[package]]
 name = "pygments"
@@ -117,4 +132,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "b1f867adc53e024f73fd2a48b54eed81f09e6c9f93ed8488d7dd40cabefffcfe"
+content-hash = "10839b7e0cc05c712e876922b36f90dc8e6211d293d135890c1d669122f254f9"
