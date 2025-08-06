@@ -1,4 +1,4 @@
-# zenconfig/configtables.py
+# zenconfig/errortree.py
 
 from zenconfig.utils import (
     get_nested_value,
@@ -111,7 +111,6 @@ class ErrorTree:
 
                         spec_value = get_nested_value(spec, new_section_path)
                         spec_type, spec_params = parse_string_values(spec_value)
-
                         min_val, max_val, default = self.get_spec_params(spec_params)
 
                         error_list.append({

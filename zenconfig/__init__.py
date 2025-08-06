@@ -10,6 +10,7 @@ from zenconfig.exceptions import ConfigValidationError, TableTypeError
 from zenconfig.utils import preprocess_config
 
 # Access the main classes from package root
+from zenconfig.parser import ConfigParser
 from zenconfig.configtables import ConfigTables
 from zenconfig.errortree import ErrorTree
 ErrorTree = ErrorTree
@@ -30,6 +31,10 @@ class ZenConfig(ConfigObj):
 
         # Create the error tree, print it and exit
         result = config.validate(Validator(), preserve_errors=True)
+
+        parser = ConfigParser(config, config.configspec, result)
+        self.meta_conf = parser.metaconf
+
         self.errortree = ErrorTree(config, config.configspec, result)
         tree_str = self.errortree.get_tree
         if tree_str:
@@ -42,7 +47,7 @@ class ZenConfig(ConfigObj):
             raise ConfigValidationError(f"The configuration at {config_file} failed validation")
 
         tabletype = kwargs.get('tabletype', None)
-        config_tables = ConfigTables(config, config.configspec, tabletype=tabletype)
+        config_tables = ConfigTables(self.meta_conf, config, tabletype=tabletype)
         if config_tables.all_tables:
             if kwargs.get('logging', False):
                 log.log(log.INFO + 3, '')
