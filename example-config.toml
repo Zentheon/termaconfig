@@ -1,23 +1,23 @@
-[config]
+[info]
 name = "zenconfig"
 description = "Custom configuration settings."
 
-[section1]
+[basic]
 enabled = true
-option1 = "eggs", "bacon", "pancakes", "waffles"
+option1 = "eggs, bacon, pancakes, waffles"
 option2 = "super_custom_value"
-[[subsection1]]
+[[other]]
 port = 3021
-ip = '174.192.0.34'
+ip = "174.192.0.34"
 
-[section2]
+[advanced]
 enabled = false
 [[items]]
-item1 = "Golden eggs"
-item2 = "Smoked bacon"
-item3 = "Fluffy pancakes"
-item4 = "Sweet waffles"
-item5 = "Other breakfast items..."
+item1 = "Electric guitars"
+item2 = "Synthesizers"
+item3 = "Hi-hats"
+item4 = "Kick drums"
+item5 = "Studio equipment..."
 
 [ignored_section]
 enabled = true

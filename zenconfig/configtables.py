@@ -3,6 +3,7 @@
 import logging as log
 import terminaltables3 as tt3
 
+from zenconfig.exceptions import TableTypeError
 from zenconfig.utils import get_nested_value, sanitize_str, join_wrapped_list
 
 class ConfigTables:
@@ -16,7 +17,14 @@ class ConfigTables:
     Once called, you can retrieve any singular
     """
     def __init__(self, config, spec, **kwargs):
-        self.tabletype = kwargs.get('tabletype', tt3.SingleTable)
+        # Verify input terminaltables class
+        self.tabletype = kwargs.get('tabletype', None)
+        if self.tabletype:
+            if not isinstance(self.tabletype, type(tt3.AsciiTable)):
+                raise TableTypeError(f"Input table class is not valid: {self.tabletype}")
+        else: self.tabletype = tt3.SingleTable
+
+        self.delimiter = kwargs.get('delimiter', '__')
 
         self.config = config
         self.spec = spec
@@ -24,9 +32,9 @@ class ConfigTables:
         tables = self.tabledata
 
         tables = self._traverse_configspec([], config, spec, tables)
-        tables = self._process_table_sections(tables)
+        tables = self._process_table_sections(tables, config)
         tables = self._create_table_rows(tables)
-        tables = self._process_table_strings(self.tabletype)
+        tables = self._process_table_strings(tables, self.tabletype)
 
     @property
     def all_tables(self):
@@ -49,7 +57,7 @@ class ConfigTables:
             return alltables
         else: return None
 
-    def _process_table_strings(self, tabletype):
+    def _process_table_strings(self, tables, tabletype):
         """Creates table representations of the processed config table data using terminaltables3
 
         This property iterates through each entry in tabledata, checks if it contains a 'table' key,
@@ -60,9 +68,9 @@ class ConfigTables:
             dict: The input dict with a 'SingleTable' str in each entry.
         """
         log.debug("Converting table row lists to strings")
-        for entry, details in self.tabledata.items():
+        for entry, details in tables.items():
             if not details['tablerows']:
-                self.tabledata[entry]['tablestr'] = None
+                tables[entry]['tablestr'] = None
                 continue
             try:
                 table_instance = tabletype(details.get('tablerows', []))
@@ -74,55 +82,76 @@ class ConfigTables:
                 table_instance.inner_heading_row_border = False
             if 'title' in details:
                 table_instance.title = details['title']
-            self.tabledata[entry]['tablestr'] = table_instance.table
+            tables[entry]['tablestr'] = table_instance.table
+        return tables
 
-    def _handle_type(self, tabledata, entry, details):
-        """@type is a multi-option setting for controlling how to display all entries in the section."""
+    def _get_config_section(self, entry, details, config):
+        keys = entry.split('.')
+        value_from_config = get_nested_value(config, keys)
+        if not isinstance(value_from_config, dict):
+            return details
+        for key, value in value_from_config.items():
+            details['data'][key] = {}
+            details['data'][key]['value'] = value
+        return details
+
+    def _handle_type(self, tabledata, entry, details, config):
+        """__type is a multi-option setting for controlling how to display all entries in the section."""
         details = details.copy() # We need details to act functionally separate from the tables entry
-        # @type: Handling logic
-        if 'type' in details:
-            if not 'wrap' in details:
-                details['wrap'] = 10
-            else:
-                try: details['wrap'] = int(details['wrap'])
-                except ValueError as e:
-                    raise ValueError(f"{e}. Is @wrap in {entry} an integer?")
+        # __type: Handling logic
+        if not 'type' in details:
+            return tabledata
 
-            tabledata[entry]['data'] = {}
-            if details['type'] == 'list_values':
-                values = [str(data.get('value', '')) for key, data
-                    in details['data'].items() if 'value' in data]
-                tabledata[entry]['data'][entry] = {
-                    'title': details.get('title', ''),
-                    'value': join_wrapped_list(values, details['wrap']),
-                    'note': details.get('note', '')
-                }
-            elif details['type'] == 'list_keys':
-                keys = [str(data.get('title', key)) for key, data in details['data'].items()]
-                tabledata[entry]['data'][entry] = {
-                    'title': details.get('title', ''),
-                    'value': ', '.join(keys),
-                    'note': details.get('note', '')
-                }
-            elif details['type'] == 'list_all':
-                entries = [f"{data.get('title', key)} ({data.get('value', '')})" for key, data
-                    in details['data'].items()]
-                tabledata[entry]['data'][entry] = {
-                    'title': details.get('title', ''),
-                    'value': ', '.join(entries),
-                    'note': details.get('note', '')
-                }
-            else:
-                raise ValueError(f"The specified type '{details['type']}' for '{entry}' is not valid.")
+        # Since a type would imply variable entries, we want to get all entries from the config
+        # section instead of using individual keys assotated with the spec.
+        details = self._get_config_section(entry, details, config)
 
-            if 'title' in tabledata[entry]:
-                del tabledata[entry]['title']
-            if 'note' in tabledata[entry]:
-                del tabledata[entry]['note']
+        if not 'wrap' in details:
+            details['wrap'] = 6
+        else:
+            try: details['wrap'] = int(details['wrap'])
+            except ValueError as e:
+                raise ValueError(f"{e}. Is {self.delimiter}wrap in {entry} an integer?")
+
+        tabledata[entry]['data'] = {}
+        if details['type'] == 'variable':
+            tabledata[entry]['data'] = details['data']
+            return tabledata
+        elif details['type'] == 'list_values':
+            values = [str(data.get('value', '')) for key, data
+                in details['data'].items() if 'value' in data]
+            tabledata[entry]['data'][entry] = {
+                'title': details.get('title', ''),
+                'value': join_wrapped_list(values, details['wrap']),
+                'note': details.get('note', '')
+            }
+        elif details['type'] == 'list_keys':
+            keys = [str(data.get('title', key)) for key, data in details['data'].items()]
+            tabledata[entry]['data'][entry] = {
+                'title': details.get('title', ''),
+                'value': ', '.join(keys),
+                'note': details.get('note', '')
+            }
+        elif details['type'] == 'list_all':
+            entries = [f"{data.get('title', key)} ({data.get('value', '')})" for key, data
+                in details['data'].items()]
+            tabledata[entry]['data'][entry] = {
+                'title': details.get('title', ''),
+                'value': ', '.join(entries),
+                'note': details.get('note', '')
+            }
+        else:
+            raise ValueError(f"The specified type '{details['type']}' for '{entry}' is not valid.")
+
+        if 'title' in tabledata[entry]:
+            del tabledata[entry]['title']
+        if 'note' in tabledata[entry]:
+            del tabledata[entry]['note']
+
         return tabledata
 
     def _handle_header(self, tables, entry, details):
-        """Processes the @header metakey
+        """Processes the __header metakey
 
         Headers should only be shown if the header metakey exists. It is expected as a list
         representing the table row.
@@ -148,31 +177,33 @@ class ConfigTables:
         return tables
 
     def _handle_parent(self, tables, entry, details):
-        # @parent: Table merging logic.
+        # __parent: Table merging logic.
         # Should be the last thing processed so we're not trying to access a deleted dict
         if 'parent' in details:
             parent_section = details['parent']
             if parent_section in tables:
                 if 'spacer' in details:
-                    tables[parent_section]['data'][f'{entry}@spacer'] = {'value': '', 'title': ''}
+                    tables[parent_section]['data'][f'{entry}{self.delimiter}spacer'] = {'value': '', 'title': ''}
                 if 'title' in details:
-                    tables[parent_section]['data'][f'{entry}@title'] = {'value': '', 'title': details['title']}
+                    tables[parent_section]['data'][f'{entry}{self.delimiter}title'] = {'value': '', 'title': details['title']}
                 tables[parent_section]['data'].update(details['data'])
                 del tables[entry]
+            else:
+                raise ValueError(f"Parent setting: {parent_section} not found for option: {entry}")
         return tables
 
-    def _process_table_sections(self, tables):
+    def _process_table_sections(self, tables, config):
         """Master function handling all the options set for config sections"""
         for entry, details in list(tables.items()):
             try:
-                # @ignore: We set the str value to a proper bool here, if it wasn't already.
+                # __ignore: We set the str value to a proper bool here, if it wasn't already.
                 if 'ignore' in tables[entry] and str(tables[entry]['ignore']).lower() == 'true':
                     tables[entry]['ignore'] = True
                     continue
                 else:
                     tables[entry]['ignore'] = False
 
-                # @toggle should be taken as a full dot-notated path to another config option.
+                # __toggle should be taken as a full dot-notated path to another config option.
                 if 'toggle' in details:
                     toggle_parts = details['toggle'].split('.')
                     section_path = '.'.join(toggle_parts[:-1])
@@ -184,7 +215,7 @@ class ConfigTables:
                             tables[entry]['ignore'] = True
                             continue
 
-                tables = self._handle_type(tables, entry, details)
+                tables = self._handle_type(tables, entry, details, config)
                 tables = self._handle_header(tables, entry, details)
                 tables = self._handle_parent(tables, entry, details)
             except Exception:
@@ -244,20 +275,20 @@ class ConfigTables:
         for key, value in opperating_dict.items():
             value = sanitize_str(value)
             current_keys = keys + [key]
-            parent_key = key.split('@')[0]
-            meta_key = key.split('@')[-1]
+            parent_key = key.split(self.delimiter)[0]
+            meta_key = key.split(self.delimiter)[-1]
             value_from_config = None
             if parent_key:
                 try:
                     value_from_config = sanitize_str(get_nested_value(config, keys + [parent_key]))
                 # The provided config should already be validated and defaults filled.
                 # If an entry doesn't match up, there's probably something wrong.
-                except KeyError as e:
-                    raise KeyError(f"{e} Is there a typo in the config spec?")
+                except KeyError:
+                    raise KeyError(f"Path: {'.'.join(keys + [parent_key])} was not found in config. Is there a typo in the config spec?")
 
-            if '@' in key:
+            if self.delimiter in key:
                 # Section configs start with delimiter
-                if key.startswith('@'):
+                if key.startswith(self.delimiter):
                     tabledata[key_path][meta_key] = value
                 # Per-setting values get added to a respective nested dict
                 else:
