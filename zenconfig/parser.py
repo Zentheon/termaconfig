@@ -44,10 +44,8 @@ class ConfigParser:
             if parent_key:
                 try:
                     value_from_config = sanitize_str(get_nested_value(config, keys + [parent_key]))
-                # The provided config should already be validated and defaults filled.
-                # If an entry doesn't match up, there's probably something wrong.
                 except KeyError:
-                    raise KeyError(f"Path: {'.'.join(keys + [parent_key])} was not found in config. Is there a typo in the config spec?")
+                    metaconf[key_path]['data'][parent_key] = {'missing': True}
 
             if self.delimiter in key:
                 # Section configs start with delimiter

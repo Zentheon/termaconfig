@@ -29,25 +29,28 @@ class ZenConfig(ConfigObj):
         # This is how we access the config options after letting ConfigObj initialize
         config = self.__dict__['parent']
 
-        # Create the error tree, print it and exit
         result = config.validate(Validator(), preserve_errors=True)
 
         parser = ConfigParser(config, config.configspec, result)
-        self.meta_conf = parser.metaconf
+        self.metaconf = parser.metaconf
 
-        self.errortree = ErrorTree(config, config.configspec, result)
-        tree_str = self.errortree.get_tree
-        if tree_str:
+        self.errortree = ErrorTree(
+            self.metaconf,
+            include_missing=kwargs.get('include_missing', True),
+            include_valid=kwargs.get('include_valid', False)
+        )
+        if not self.errortree.valid:
             if kwargs.get('logging', False):
-                for line in tree_str.splitlines():
+                for line in self.errortree.get_tree.splitlines():
                     log.log(log.INFO + 3, line)
             else:
-                print(tree_str)
+                print(self.errortree.get_tree)
 
             raise ConfigValidationError(f"The configuration at {config_file} failed validation")
 
         tabletype = kwargs.get('tabletype', None)
-        config_tables = ConfigTables(self.meta_conf, config, tabletype=tabletype)
+        config_tables = ConfigTables(self.metaconf, config, tabletype=tabletype)
+
         if config_tables.all_tables:
             if kwargs.get('logging', False):
                 log.log(log.INFO + 3, '')
