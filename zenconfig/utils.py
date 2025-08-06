@@ -1,5 +1,26 @@
 # zenconfig/utils.py
 
+def preprocess_config(config_data):
+    """Preprocesses configuration data by stripping quotes from values and trimming whitespace.
+
+    Args:
+        config_data (file-like object): The file-like object containing the raw configuration data.
+
+    Returns:
+        list: A list of modified lines with quotes stripped and whitespace trimmed.
+    """
+    modified_lines = []
+    for line in config_data.read().split('\n'):
+        if '=' in line:
+            key, value = line.split('=', 1)
+            key = key.strip()
+            value = strip_quotes(value.strip())
+            modified_line = f"{key}={value}"
+            modified_lines.append(modified_line)
+        else:
+            modified_lines.append(line)
+    return modified_lines
+
 def get_nested_value(dictionary, keys):
     """Searches for a value in a dict using the provided list of keys as the search path.
 
@@ -11,7 +32,7 @@ def get_nested_value(dictionary, keys):
     """
     for key in keys:
         if key not in dictionary:
-            raise KeyError(f"Key ({key}) not found in dictionary.")
+            raise KeyError(f"Path {keys} not found in dictionary.")
         dictionary = dictionary.get(key)
     return dictionary
 
@@ -63,37 +84,73 @@ def join_wrapped_list(items, entries_per_line):
 
     return "\n".join(result)
 
-def strip_metakeys(input_dict):
-    """Takes an input config dict and removes keys with @ in them. Use the returned spec to run validation on."""
+def strip_quotes(input_string):
+    """Strips leading and trailing quotes from a string if they are the same type (single or double).
+
+    Args:
+        input_string (str): The string to strip quotes from.
+
+    Returns:
+        str: The original string with outer matching quotes removed.
+    """
+    if input_string.startswith("'") and input_string.endswith("'"):
+        return input_string[1:-1]
+    elif input_string.startswith('"') and input_string.endswith('"'):
+        return input_string[1:-1]
+    else:
+        return input_string
+
+def strip_metakeys(input_dict, delimiter):
+    """Takes an input config dict and removes keys with the delimiter in them. Use the returned spec to run validation on."""
     stripped_spec = {}
     for key, value in input_dict.items():
-        if "@" not in key:
+        if delimiter not in key:
             if isinstance(value, dict):
-                new_value = strip_metakeys(value)
+                new_value = strip_metakeys(value, delimiter)
                 if new_value:
                     stripped_spec[key] = new_value
             else:
                 stripped_spec[key] = value
     return stripped_spec
 
-def squash_bool_dict_tree(in_dict):
-    """Recursively squashes a dictionary into a single True value if all containing keys are True."""
-    all_values_true = True
+def squash_true_dicts(in_dict):
+    """Recursively squashes a dictionary into a single True value if all containing keys are True. Modifies nothing otherwise."""
+    all_true = True
+
     for key, value in in_dict.items():
         if isinstance(value, dict):
-            result = squash_bool_dict_tree(value)
-            if not result:
-                all_values_true = False
-            else:
-                in_dict[key] = result
-        elif isinstance(value, bool):
-            all_values_true &= value
-        else:
-            all_values_true = False
+            result = squash_true_dicts(value)
+            if result is not True:
+                all_true = False
+                break
+        elif value is not True:
+            all_true = False
+            break
 
-    return all_values_true or in_dict
+    return True if all_true else in_dict
 
-def get_values_from_string(input_str):
+def remove_true_keys(input_dict):
+    """Recursively removes all keys from a dictionary where the value is True.
+
+    Args:
+        input_dict (dict): The dictionary to process.
+
+    Returns:
+        dict: A new dictionary with keys having values of True removed.
+    """
+    result = {}
+
+    for key, value in input_dict.items():
+        if isinstance(value, dict):
+            cleaned_sub_dict = remove_true_keys(value)
+            if cleaned_sub_dict:
+                result[key] = cleaned_sub_dict
+        elif value is not True:
+            result[key] = value
+
+    return result
+
+def parse_string_values(input_str):
     """Extracts and returns a dict object from a string formatted as '{any string}(key1=value1,key2=value2,...)'.
 
     Args:
@@ -101,85 +158,49 @@ def get_values_from_string(input_str):
             The string should be in the format `{any string}(key1=value1,key2=value2,...)`.
 
     Returns:
+        str: The first part (key) of the string before brackets.
         dict: The tuple-formatted str in dict form. Keys with no values are returned as None.
 
     Raises:
         ValueError: If the input string format is incorrect or if there are invalid key-value pairs.
     """
+    try: index = input_str.index('(')
+    except ValueError: return input_str, None
 
-    parts = input_str.split('(')
-    if len(parts) != 2:
-        raise ValueError(f"Invalid input format: {input_str}")
+    parent_key = input_str[:index]
+    # Get second half (value) of the str. Also trim off the trailing bracket
+    tuple = input_str[index + 1:][:-1]
 
-    key_and_values_part = parts[1].split(')')
-    if len(key_and_values_part) != 2:
-        raise ValueError(f"Invalid input format: {key_and_values_part}")
+    # Handle nested tuple-like objects
+    open_bracket_index = tuple.find('(')
+    if open_bracket_index != -1:
+        close_bracket_index = tuple.find(')', open_bracket_index + 1)
+        if close_bracket_index == -1:
+            raise ValueError(f"{input_str} is not valid: Opening bracket with no closer")
+        sub_list = tuple[open_bracket_index + 1:close_bracket_index]
+        # Temporarily swap out commas for double semicolon so the list as treated as once item
+        new_sub_list = sub_list.replace(',', ';;')
+        tuple = tuple.replace(sub_list, new_sub_list)
 
-    key_and_values_str = key_and_values_part[0]
+    items = tuple.split(',')
     value_dict = {}
-    for item in key_and_values_str.split(','):
+    for idx, item in enumerate(items):
+        item = strip_quotes(item.strip())
+
         item_parts = item.split('=')
+        # Items with no values
         if len(item_parts) == 1:
-            k = item_parts[0].strip()
-            v = None
+            key = item_parts[0].strip()
+            val = None
+        # Items longer than two (key=value) are invalid
         elif len(item_parts) != 2:
             raise ValueError(f"Invalid key-value pair format: {item_parts}")
+        # Regular key=value pairs
         else:
-            k, v = item_parts
-            k = k.strip()
-            v = v.strip().strip('"')
+            key, val = item_parts
+            key = key.strip()
+            val = val.strip().strip('"').replace(';;', ',')
 
-        value_dict[k] = v
+        value_dict[key] = val
 
-    return value_dict
-
-# flatten_errors from ConfigObj.
-# Type checkers are happier with both lists being explicitly initialized
-def flatten_errors(config, result, levels=[], results=[]):
-    """
-    An example function that will turn a nested dictionary of results (as returned by ``ConfigObj.validate``) into a flat list.
-
-    ``config`` is the ConfigObj instance being checked, ``results`` is the results dictionary returned by ``validate``.
-
-    (This is a recursive function, so you shouldn't use the ``levels`` or ``results`` arguments - they are used by the function.)
-
-    Returns:
-        list: A list of keys that failed. Each member of the list is a tuple:
-
-            (list of sections..., key, result)
-
-    If ``validate`` was called with ``preserve_errors=False`` (the default), then ``result`` will always be ``False``.
-
-    *list of sections* is a flattened list of sections that the key was found in.
-
-    If the section was missing (or a section was expected and a scalar provided - or vice-versa) then `key` will be ``None``.
-
-    If the value (or section) was missing then `result` will be ``False``.
-
-    If ``validate`` was called with ``preserve_errors=True`` and a value was present, but failed the check, then `result` will be the exception object returned. You can use this as a string that describes the failure.
-
-    For example *The value "3" is of the wrong type*.
-    """
-
-    if result == True:
-        return sorted(results)
-    if result == False or isinstance(result, Exception):
-        results.append((levels[:], None, result))
-        if levels:
-            levels.pop()
-        return sorted(results)
-    for (key, val) in list(result.items()):
-        if val == True:
-            continue
-        if isinstance(config.get(key), dict):
-            # Go down one level
-            levels.append(key)
-            flatten_errors(config[key], val, levels, results)
-            continue
-        results.append((levels[:], key, val))
-
-    # Go up one level
-    if levels:
-        levels.pop()
-
-    return sorted(results)
+    return parent_key, value_dict

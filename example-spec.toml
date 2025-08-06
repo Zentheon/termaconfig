@@ -1,71 +1,70 @@
 # This uses the ConfigObj spec format with one key difference:
-# the '@' symbol is used as a delimiter for special formatting of
-# entries with ZenConfig. The valid options are:
+# the '__' symbol is used as a delimiter for special formatting of
+# entries with ZenConfig. Options can also be wrapped in quotes
+# to be more standard-compliant and pre processed with ZenConfig.
+#
+# The valid options are:
 #
 # Section options:
-# @title (str): Name of the table that will be printed. Also used intuitively by
-#    other options like @type.
-# @header (list): Adds a header. Should contain up to 3 list items for column names.
-# @type (str): How the entries in the section are interpreted:
+# __title (str): Name of the table that will be printed. Also used intuitively by
+#    other options like __type.
+# __header (list): Adds a header. Should contain up to 3 list items for column names.
+# __type (str): How the entries in the section are interpreted:
+#   variable: Searches the config section for values to show instead.
 #   list_keys: Merges all config keys into one entry.
 #   list_values: Merges all values from associated config to one entry.
 #   list_all: Merges both keys and values: 'key1 (value1), key2, (value2)'
-# @wrap (int): (@type only) Wraps value entries every provided number of items.
-# @parent (section): dot notated path of another section to merge the table into.
-# @ignore (bool): Whether to completely ignore handling tables for the section.
-# @toggle (str): Point to any boolean option in a dot-notated path that
-#   acts as @ignore if false.
+# __wrap (int): (__type only) Wraps value entries every provided number of items.
+# __parent (section): dot notated path of another section to merge the table into.
+# __ignore (bool): Whether to completely ignore handling tables for the section.
+# __toggle (str): Point to any boolean option in a dot-notated path that
+#   acts as __ignore if false.
 #
 # Per-item options:
-# {option}@title (str): Pretty name to use in place of the technical one.
-# {option}@note (str): Optional third column entry.
-# {option}@ignore (str): Same as for sections but per-option.
+# {option}__title (str): Pretty name to use in place of the technical one.
+# {option}__note (str): Optional third column entry.
+# {option}__ignore (str): Same as for sections but per-option.
 
-[config]
-@title = General Configuration
-name = string(default='zenconfig')
-name@title = Name
-description = string(default='Default configuration settings.')
-description@title = Description
+[info]
+__title = "General Info"
+name = "string(default='zenconfig')"
+name__title = "Name"
+description = "string(default='Default configuration settings.')"
+description__title = "Description"
 
-[section1]
-@title = Section One
-@header = 'Option', 'Value'
-enabled = boolean(default=true)
-enabled@ignore = true
-option1 = list(default=list('lemon', 'lime', 'orange', 'grapefruit'))
-option1@title = Option 1
-option2 = string(default='default_value')
-option2@title = Option 2
-[[subsection1]]
-@parent = 'section1'
-@title = 'Secondary settings:'
-@toggle = section1.enabled
-setting = integer(min=1024, default=1234)
-setting@title = 'Port'
-ip = ip_addr
-ip@title = 'Address'
+[basic]
+__title = "Basic Config"
+__header = "'Option', 'Value'"
+enabled = "boolean(default=true)"
+enabled__ignore = true
+option1 = "list(default=list('lemon', 'lime', 'orange', 'grapefruit'))"
+option1__title = "Option 1"
+option2 = "string(default=default_value)"
+option2__title = "Option 2"
+[[other]]
+__parent = "basic"
+__title = "Secondary settings:"
+__toggle = "basic.enabled"
+port = "integer(min=1024, default=1234)"
+port__title = "Port"
+ip = "ip_addr"
+ip__title = "Address"
 
-[section2]
-@title = Section Two
-@header = 'Option', 'Value', 'Note'
-enabled = boolean(default=false)
-enabled@title = 'Enable section 2'
+[advanced]
+__title = "Advanced Config"
+__header = "'Option, 'Value', 'Note'"
+enabled = "boolean(default=false)"
+enabled__title = "Enable section 2"
 [[items]]
-@type = list_values
-@title = Items
-@wrap = 2
-@note = "You can also add notes\nto various entries!"
-@parent = section2
-item1 = string
-item2 = string
-item3 = string
-item4 = string
-item5 = string
+__type = "list_values"
+__title = "Items"
+__wrap = 2
+__note = "You can also add notes\nto various entries!"
+__parent = "advanced"
 
 [ignored_section]
-@ignore = true
-@title = Dont show this section!
-enabled = boolean(default=true)
-enabled@title = Enable section 2
-hidden_key = integer(min=0, max=100, default=42)
+__ignore = true
+__title = "Dont show this section!"
+enabled = "boolean(default=true)"
+enabled__title = "Enable section 2"
+hidden_key = "integer(min=0, max=100, default=42)"
