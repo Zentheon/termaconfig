@@ -16,7 +16,7 @@ class ConfigTables:
 
     Once called, you can retrieve any singular
     """
-    def __init__(self, config, spec, **kwargs):
+    def __init__(self, meta_conf, config, **kwargs):
         # Verify input terminaltables class
         self.tabletype = kwargs.get('tabletype', None)
         if self.tabletype:
@@ -27,14 +27,12 @@ class ConfigTables:
         self.delimiter = kwargs.get('delimiter', '__')
 
         self.config = config
-        self.spec = spec
-        self.tabledata = {}
-        tables = self.tabledata
 
-        tables = self._traverse_configspec([], config, spec, tables)
-        tables = self._process_table_sections(tables, config)
+        tables = self._process_table_sections(meta_conf, config)
         tables = self._create_table_rows(tables)
         tables = self._process_table_strings(tables, self.tabletype)
+
+        self.tabledata = tables
 
     @property
     def all_tables(self):
@@ -255,54 +253,4 @@ class ConfigTables:
                     tabledata[entry]['tablerows'].append(table_row)
             except Exception:
                 raise
-        return tabledata
-
-    def _traverse_configspec(self, keys, config, opperating_dict, tabledata):
-        """
-        Recursively searches in a provided config specification and an assotiated, validated config.
-        A `tables` dict is created containing parsed metakey information along with values from the input config.
-        """
-        # Validate inputs
-        if not isinstance(opperating_dict, dict):
-            raise TypeError(f"Expected loaded specification dict, not '{opperating_dict}'")
-        if not isinstance(config, dict):
-            raise TypeError(f"Expected loaded config dict, not '{config}'")
-
-        key_path = '.'.join(keys)
-        if key_path and key_path not in tabledata:
-            tabledata[key_path] = {}
-            tabledata[key_path]['data'] = {}
-        for key, value in opperating_dict.items():
-            value = sanitize_str(value)
-            current_keys = keys + [key]
-            parent_key = key.split(self.delimiter)[0]
-            meta_key = key.split(self.delimiter)[-1]
-            value_from_config = None
-            if parent_key:
-                try:
-                    value_from_config = sanitize_str(get_nested_value(config, keys + [parent_key]))
-                # The provided config should already be validated and defaults filled.
-                # If an entry doesn't match up, there's probably something wrong.
-                except KeyError:
-                    raise KeyError(f"Path: {'.'.join(keys + [parent_key])} was not found in config. Is there a typo in the config spec?")
-
-            if self.delimiter in key:
-                # Section configs start with delimiter
-                if key.startswith(self.delimiter):
-                    tabledata[key_path][meta_key] = value
-                # Per-setting values get added to a respective nested dict
-                else:
-                    # Initialize target setting dict if needed
-                    if not parent_key in tabledata[key_path]['data']:
-                        tabledata[key_path]['data'][parent_key] = {}
-
-                    tabledata[key_path]['data'][parent_key][meta_key] = value
-            elif isinstance(value, dict):
-                # Recursively traverse nested sections
-                tabledata = self._traverse_configspec(current_keys, config, value, tabledata)
-            else:
-                if not key in tabledata[key_path]['data']:
-                    tabledata[key_path]['data'][key] = {}
-                tabledata[key_path]['data'][key]['value'] = value_from_config
-
         return tabledata
