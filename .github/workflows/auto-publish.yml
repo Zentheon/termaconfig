@@ -1,4 +1,4 @@
-name: Release
+name: Publish
 
 on:
   push:
@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   pypi-publish:
-    name: Upload release to PyPI
+    name: Build, test and publish package
     runs-on: ubuntu-latest
     environment:
       name: pypi
@@ -32,6 +32,9 @@ jobs:
           virtualenvs-create: true
           virtualenvs-in-project: true
           virtualenvs-path: venv
+
+      - name: Install dependencies
+        run: poetry install
 
       - name: Run tests
         run: poetry run pytest
