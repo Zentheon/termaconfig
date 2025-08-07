@@ -1,9 +1,9 @@
 # example.py
 
 import logging as log
-from terminaltables3 import AsciiTable, SingleTable, DoubleTable
+from terminaltables3 import AsciiTable, DoubleTable
 
-from zenconfig import ZenConfig, ConfigValidationError
+from termaconfig import TermaConfig, ConfigValidationError
 
 log.basicConfig(
     level = log.INFO,
@@ -16,11 +16,14 @@ if __name__ == '__main__':
     spec_path = 'example-spec.toml'
 
     try:
-        config = ZenConfig(
+        config = TermaConfig(
             config_path,
             spec_path,
+            # tabletype can be any valid terminaltables3 class instance.
+            # Try passing another! Another valid option is AsciiTable
+            # SingleTable is used by default if none was provided.
             tabletype = DoubleTable,
-            logging = True
+            logging = False
         )
     except ConfigValidationError:
         print()

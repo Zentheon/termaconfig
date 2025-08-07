@@ -1,4 +1,4 @@
-# zenconfig/utils.py
+# termaconfig/utils.py
 
 def preprocess_config(config_data):
     """Preprocesses configuration data by stripping quotes from values and trimming whitespace.

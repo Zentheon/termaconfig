@@ -2,27 +2,27 @@
 
 import re
 import io
-import zenconfig as zc
+import termaconfig as tc
 
 from printree import ptree
 
 from configobj import ConfigObj
 from configobj.validate import Validator
 
-class ZenConfigTests(ConfigObj):
+class TermaConfigTests(ConfigObj):
     """Cut-down version of the ZC wrapper for testing"""
     def __init__(self, config_file, spec_file, **kwargs):
         config_file, spec_file = self.validate_files(config_file, spec_file)
 
-        config_lines = zc.preprocess_config(config_file)
-        spec_lines = zc.preprocess_config(spec_file)
+        config_lines = tc.preprocess_config(config_file)
+        spec_lines = tc.preprocess_config(spec_file)
         super().__init__(config_lines, configspec=spec_lines)
         # This is how we access the config options after letting ConfigObj initialize
         config = self.__dict__['parent']
 
         self.result = config.validate(Validator(), preserve_errors=True)
 
-        parser = zc.ConfigParser(config, config.configspec, self.result)
+        parser = tc.ConfigParser(config, config.configspec, self.result)
         self.metaconf = parser.metaconf
 
     def validate_files(self, config_file, spec_file):

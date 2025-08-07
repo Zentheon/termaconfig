@@ -1,9 +1,9 @@
 [tool.poetry]
-name = "zenconfig"
+name = "termaconfig"
 version = "1.0.0"
-description = "Python project template using devenv."
+description = "Create pretty representations of your configs"
 authors = ["Zentheon <zentheon@mailbox.org>"]
-homepage = "https://github.com/zentheon/zenconfig"
+homepage = "https://github.com/zentheon/termaconfig"
 license = "GPL-3.0"
 
 [tool.poetry.dependencies]
@@ -18,7 +18,7 @@ pytest = "^8.4.1"
 [tool.pyright]
 venvPath = "./venv"
 venv = "venv"
-include = ["tests", "zenconfig"]
+include = ["tests", "termaconfig"]
 
 [build-system]
 requires = ["poetry"]

@@ -27,7 +27,7 @@
 
 [info]
 __title = "General Info"
-name = "string(default='zenconfig')"
+name = "string(default='termaconfig')"
 name__title = "Name"
 description = "string(default='Default configuration settings.')"
 description__title = "Description"

@@ -1,9 +1,9 @@
-# zenconfig/parser.py
+# termaconfig/parser.py
 
 import terminaltables3 as tt3
 
-from zenconfig.exceptions import TableTypeError
-from zenconfig.utils import get_nested_value, sanitize_str, parse_string_values
+from termaconfig.exceptions import TableTypeError
+from termaconfig.utils import get_nested_value, sanitize_str, parse_string_values
 
 class ConfigParser:
     """Creates a combined 'metaconf' dict containing all relevant info about a configuration.

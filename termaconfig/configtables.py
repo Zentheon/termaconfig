@@ -1,11 +1,11 @@
-# zenconfig/configtables.py
+# termaconfig/configtables.py
 
 import logging as log
 from copy import deepcopy
 import terminaltables3 as tt3
 
-from zenconfig.exceptions import TableTypeError
-from zenconfig.utils import get_nested_value, sanitize_str, join_wrapped_list
+from termaconfig.exceptions import TableTypeError
+from termaconfig.utils import get_nested_value, sanitize_str, join_wrapped_list
 
 class ConfigTables:
     """Manages the creation and manipulation of tables based on a configuration spec.
