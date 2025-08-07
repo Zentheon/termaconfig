@@ -51,6 +51,7 @@ class ZenConfig(ConfigObj):
             config,
             tabletype=kwargs.get('tabletype', None)
         )
+        self.tabledata = config_tables.tabledata
 
         if config_tables.all_tables:
             if kwargs.get('logging', False):

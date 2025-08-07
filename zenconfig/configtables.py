@@ -1,6 +1,7 @@
 # zenconfig/configtables.py
 
 import logging as log
+from copy import deepcopy
 import terminaltables3 as tt3
 
 from zenconfig.exceptions import TableTypeError
@@ -16,7 +17,12 @@ class ConfigTables:
 
     Once called, you can retrieve any singular
     """
-    def __init__(self, meta_conf, config, **kwargs):
+    def __init__(self, metaconf, config, **kwargs):
+        # I ended up realizing that tabledata is actually iterating upon the
+        # same object pointer as metaconf, which is bad.
+        # Instead of refactoring logic again, deepcopy becomes a saving grace here
+        tabledata = deepcopy(metaconf)
+
         # Verify input terminaltables class
         self.tabletype = kwargs.get('tabletype', None)
         if self.tabletype:
@@ -28,11 +34,11 @@ class ConfigTables:
 
         self.config = config
 
-        tables = self._process_table_sections(meta_conf, config)
-        tables = self._create_table_rows(tables)
-        tables = self._process_table_strings(tables, self.tabletype)
+        tabledata = self._process_table_sections(tabledata, config)
+        tabledata = self._create_table_rows(tabledata)
+        tabledata = self._process_table_strings(tabledata, self.tabletype)
 
-        self.tabledata = tables
+        self.tabledata = tabledata
 
     @property
     def all_tables(self):
@@ -55,7 +61,7 @@ class ConfigTables:
             return alltables
         else: return None
 
-    def _process_table_strings(self, tables, tabletype):
+    def _process_table_strings(self, tabledata, tabletype):
         """Creates table representations of the processed config table data using terminaltables3
 
         This property iterates through each entry in tabledata, checks if it contains a 'table' key,
@@ -66,9 +72,9 @@ class ConfigTables:
             dict: The input dict with a 'SingleTable' str in each entry.
         """
         log.debug("Converting table row lists to strings")
-        for entry, details in tables.items():
+        for entry, details in tabledata.items():
             if not details['tablerows']:
-                tables[entry]['tablestr'] = None
+                tabledata[entry]['tablestr'] = None
                 continue
             try:
                 table_instance = tabletype(details.get('tablerows', []))
@@ -80,8 +86,8 @@ class ConfigTables:
                 table_instance.inner_heading_row_border = False
             if 'title' in details:
                 table_instance.title = details['title']
-            tables[entry]['tablestr'] = table_instance.table
-        return tables
+            tabledata[entry]['tablestr'] = table_instance.table
+        return tabledata
 
     def _get_config_section(self, entry, details, config):
         keys = entry.split('.')
@@ -148,7 +154,7 @@ class ConfigTables:
 
         return tabledata
 
-    def _handle_header(self, tables, entry, details):
+    def _handle_header(self, tabledata, entry, details):
         """Processes the __header metakey
 
         Headers should only be shown if the header metakey exists. It is expected as a list
@@ -171,35 +177,35 @@ class ConfigTables:
                 if len(header_list) > 2:
                     header_dict['__header__']['note'] = header_list[2]
                 # Positionally unpack dicts so __header__ is at the top
-                tables[entry]['data'] = {**header_dict, **tables[entry]['data']}
-        return tables
+                tabledata[entry]['data'] = {**header_dict, **tabledata[entry]['data']}
+        return tabledata
 
-    def _handle_parent(self, tables, entry, details):
+    def _handle_parent(self, tabledata, entry, details):
         # __parent: Table merging logic.
         # Should be the last thing processed so we're not trying to access a deleted dict
         if 'parent' in details:
             parent_section = details['parent']
-            if parent_section in tables:
+            if parent_section in tabledata:
                 if 'spacer' in details:
-                    tables[parent_section]['data'][f'{entry}{self.delimiter}spacer'] = {'value': '', 'title': ''}
+                    tabledata[parent_section]['data'][f'{entry}{self.delimiter}spacer'] = {'value': '', 'title': ''}
                 if 'title' in details:
-                    tables[parent_section]['data'][f'{entry}{self.delimiter}title'] = {'value': '', 'title': details['title']}
-                tables[parent_section]['data'].update(details['data'])
-                del tables[entry]
+                    tabledata[parent_section]['data'][f'{entry}{self.delimiter}title'] = {'value': '', 'title': details['title']}
+                tabledata[parent_section]['data'].update(details['data'])
+                del tabledata[entry]
             else:
                 raise ValueError(f"Parent setting: {parent_section} not found for option: {entry}")
-        return tables
+        return tabledata
 
-    def _process_table_sections(self, tables, config):
+    def _process_table_sections(self, tabledata, config):
         """Master function handling all the options set for config sections"""
-        for entry, details in list(tables.items()):
+        for entry, details in list(tabledata.items()):
             try:
                 # __ignore: We set the str value to a proper bool here, if it wasn't already.
-                if 'ignore' in tables[entry] and str(tables[entry]['ignore']).lower() == 'true':
-                    tables[entry]['ignore'] = True
+                if 'ignore' in tabledata[entry] and str(tabledata[entry]['ignore']).lower() == 'true':
+                    tabledata[entry]['ignore'] = True
                     continue
                 else:
-                    tables[entry]['ignore'] = False
+                    tabledata[entry]['ignore'] = False
 
                 # __toggle should be taken as a full dot-notated path to another config option.
                 if 'toggle' in details:
@@ -207,18 +213,18 @@ class ConfigTables:
                     section_path = '.'.join(toggle_parts[:-1])
                     setting_key = toggle_parts[-1]
                     # Since we can't just have
-                    if section_path in tables and setting_key in tables[section_path]['data']:
+                    if section_path in tabledata and setting_key in tabledata[section_path]['data']:
                         # The config parser should have already set up datatypes, but str is checked to be safe.
-                        if str(tables[section_path]['data'][setting_key]['value']).lower() == 'false':
-                            tables[entry]['ignore'] = True
+                        if str(tabledata[section_path]['data'][setting_key]['value']).lower() == 'false':
+                            tabledata[entry]['ignore'] = True
                             continue
 
-                tables = self._handle_type(tables, entry, details, config)
-                tables = self._handle_header(tables, entry, details)
-                tables = self._handle_parent(tables, entry, details)
+                tabledata = self._handle_type(tabledata, entry, details, config)
+                tabledata = self._handle_header(tabledata, entry, details)
+                tabledata = self._handle_parent(tabledata, entry, details)
             except Exception:
                 raise
-        return tables
+        return tabledata
 
     def _create_table_rows(self, tabledata):
         """Handles the options set in individual settings and adds the `table` lists to `tables[entry]`"""
