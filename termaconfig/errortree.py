@@ -1,8 +1,8 @@
-# zenconfig/errortree.py
+# termaconfig/errortree.py
 
 from printree import ftree
 
-from zenconfig.utils import (
+from termaconfig.utils import (
     get_nested_value,
     squash_true_dicts,
     strip_metakeys,

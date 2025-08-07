@@ -1,6 +1,6 @@
 [info]
-name = "zenconfig"
-description = "Custom configuration settings."
+name = "termaconfig"
+description = "A pretty-printed config!"
 
 [basic]
 enabled = true

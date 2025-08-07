@@ -1,4 +1,4 @@
-# zenconfig/__init__.py
+# termaconfig/__init__.py
 
 import io
 import logging as log
@@ -6,18 +6,18 @@ import logging as log
 from configobj import ConfigObj
 from configobj.validate import Validator
 
-from zenconfig.exceptions import ConfigValidationError, TableTypeError
-from zenconfig.utils import preprocess_config
+from termaconfig.exceptions import ConfigValidationError, TableTypeError
+from termaconfig.utils import preprocess_config
 
 # Access the main classes from package root
-from zenconfig.parser import ConfigParser
-from zenconfig.configtables import ConfigTables
-from zenconfig.errortree import ErrorTree
+from termaconfig.parser import ConfigParser
+from termaconfig.configtables import ConfigTables
+from termaconfig.errortree import ErrorTree
 
 ConfigValidationError = ConfigValidationError
 TableTypeError = TableTypeError
 
-class ZenConfig(ConfigObj):
+class TermaConfig(ConfigObj):
     def __init__(self, config_file, spec_file, **kwargs):
         config_file, spec_file = self.validate_files(config_file, spec_file)
 

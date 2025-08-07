@@ -4,9 +4,9 @@ import pytest
 from terminaltables3 import AsciiTable
 import printree as pt
 
-import zenconfig as zc
+import termaconfig as tc
 
-from tests.utils import ZenConfigTests, load_config, regex_test_lines
+from tests.utils import TermaConfigTests, load_config, regex_test_lines
 
 # Paths to test files and spec files
 CONFIG_PATH_1 = 'tests/valid-configs/example-config.toml'
@@ -20,8 +20,8 @@ SPEC_PATH_1 = 'tests/valid-configs/example-spec.toml'
 
 INFO_SEC_REGEX = [
     r'\+General Info.*',
-    r'\| Name\s+\| zenconfig\s+\|',
-    r'\| Description\s+\| Custom configuration settings.\s+\|',
+    r'\| Name\s+\| termaconfig\s+\|',
+    r'\| Description\s+\| A pretty-printed config!\s+\|',
     r'\+.*'
 ]
 BASIC_SEC_REGEX = [
@@ -48,9 +48,9 @@ ADVANCED_SEC_REGEX = [
 
 def test_valid_config_set_001():
     print() # Cleanliness line
-    instance = ZenConfigTests(CONFIG_PATH_1, SPEC_PATH_1)
+    instance = TermaConfigTests(CONFIG_PATH_1, SPEC_PATH_1)
 
-    tables = zc.ConfigTables(instance.metaconf, instance, tabletype=AsciiTable)
+    tables = tc.ConfigTables(instance.metaconf, instance, tabletype=AsciiTable)
 
     info_sec_str = tables.tabledata['info']['tablestr']
     basic_sec_str = tables.tabledata['basic']['tablestr']
@@ -73,9 +73,9 @@ def test_valid_config_set_001():
 
 def test_error_tree_is_valid():
     print() # Cleanliness line
-    instance = ZenConfigTests(CONFIG_PATH_1, SPEC_PATH_1)
+    instance = TermaConfigTests(CONFIG_PATH_1, SPEC_PATH_1)
 
-    errortree = zc.ErrorTree(
+    errortree = tc.ErrorTree(
         instance.metaconf,
         include_missing=True,
         include_valid=True
