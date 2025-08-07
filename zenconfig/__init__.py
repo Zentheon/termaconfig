@@ -13,8 +13,6 @@ from zenconfig.utils import preprocess_config
 from zenconfig.parser import ConfigParser
 from zenconfig.configtables import ConfigTables
 from zenconfig.errortree import ErrorTree
-ErrorTree = ErrorTree
-ConfigTables = ConfigTables
 
 ConfigValidationError = ConfigValidationError
 TableTypeError = TableTypeError
@@ -48,8 +46,11 @@ class ZenConfig(ConfigObj):
 
             raise ConfigValidationError(f"The configuration at {config_file} failed validation")
 
-        tabletype = kwargs.get('tabletype', None)
-        config_tables = ConfigTables(self.metaconf, config, tabletype=tabletype)
+        config_tables = ConfigTables(
+            self.metaconf,
+            config,
+            tabletype=kwargs.get('tabletype', None)
+        )
 
         if config_tables.all_tables:
             if kwargs.get('logging', False):

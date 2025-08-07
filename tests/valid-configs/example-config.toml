@@ -1,0 +1,24 @@
+[info]
+name = "zenconfig"
+description = "Custom configuration settings."
+
+[basic]
+enabled = true
+option1 = "eggs, bacon, pancakes, waffles"
+option2 = "super_custom_value"
+[[other]]
+port = 3021
+ip = "174.192.0.34"
+
+[advanced]
+enabled = false
+[[items]]
+item1 = "Electric guitars"
+item2 = "Synthesizers"
+item3 = "Hi-hats"
+item4 = "Kick drums"
+item5 = "Studio equipment..."
+
+[ignored_section]
+enabled = true
+hidden_key = 42
