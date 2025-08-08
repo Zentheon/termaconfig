@@ -5,6 +5,7 @@ description = "Create pretty representations of your configs"
 authors = ["Zentheon <zentheon@mailbox.org>"]
 homepage = "https://github.com/zentheon/termaconfig"
 license = "GPL-3.0"
+readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.12"
