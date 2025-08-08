@@ -42,10 +42,26 @@ jobs:
       - name: Package project
         run: poetry build
 
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: build-artifact
+          path: dist/*.tar.gz
+
       - name: Publish package to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
 
-      - name: Create Github release
+  github-release:
+    needs: pypi-publish
+    runs-on: ubuntu-latest
+    name: Create Github release
+    steps:
+      - name: Retrieve built package
+        uses: actions/download-artifact@v5
+        with:
+          name: build-artifact
+
+      - name: Create release
         uses: docker://antonyurchenko/git-release:latest
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
