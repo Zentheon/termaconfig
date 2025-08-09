@@ -76,6 +76,12 @@ def sanitize_str(input_data):
     else:
         raise ValueError(f"Unsupported data type: {type(input_data)}")
 
+def fill_required_keys(input_dict, required_keys):
+    for key in required_keys:
+        if key not in input_dict:
+            input_dict[key] = None
+    return input_dict
+
 def join_wrapped_list(items, entries_per_line):
     """Joins a list into a string with items separated by commas and wrapped to multiple lines."""
     if not items:

@@ -4,8 +4,11 @@ import logging as log
 from copy import deepcopy
 import terminaltables3 as tt3
 
+from printree import ptree
+
+import termaconfig as tc
 from termaconfig.exceptions import TableTypeError
-from termaconfig.utils import get_nested_value, sanitize_str, join_wrapped_list
+import termaconfig.utils as util
 
 class ConfigTables:
     """Manages the creation and manipulation of tables based on a configuration spec.
@@ -82,16 +85,16 @@ class ConfigTables:
                 raise TypeError(f"{e}. Was a correct terminaltables class passed?")
 
             # Header row would have already been handled if present
-            if not 'header' in details:
+            if not details['header']:
                 table_instance.inner_heading_row_border = False
-            if 'title' in details:
+            if details['title']:
                 table_instance.title = details['title']
             tabledata[entry]['tablestr'] = table_instance.table
         return tabledata
 
     def _get_config_section(self, entry, details, config):
         keys = entry.split('.')
-        value_from_config = get_nested_value(config, keys)
+        value_from_config = util.get_nested_value(config, keys)
         if not isinstance(value_from_config, dict):
             return details
         for key, value in value_from_config.items():
@@ -103,14 +106,14 @@ class ConfigTables:
         """__type is a multi-option setting for controlling how to display all entries in the section."""
         details = details.copy() # We need details to act functionally separate from the tables entry
         # __type: Handling logic
-        if not 'type' in details:
+        if not details['type']:
             return tabledata
 
         # Since a type would imply variable entries, we want to get all entries from the config
         # section instead of using individual keys assotated with the spec.
         details = self._get_config_section(entry, details, config)
 
-        if not 'wrap' in details:
+        if not details['wrap']:
             details['wrap'] = 6
         else:
             try: details['wrap'] = int(details['wrap'])
@@ -125,32 +128,32 @@ class ConfigTables:
             values = [str(data.get('value', '')) for key, data
                 in details['data'].items() if 'value' in data]
             tabledata[entry]['data'][entry] = {
-                'title': details.get('title', ''),
-                'value': join_wrapped_list(values, details['wrap']),
-                'note': details.get('note', '')
+                'title': details.get('title', None),
+                'value': util.join_wrapped_list(values, details['wrap']),
+                'note': details.get('note', None)
             }
         elif details['type'] == 'list_keys':
             keys = [str(data.get('title', key)) for key, data in details['data'].items()]
             tabledata[entry]['data'][entry] = {
-                'title': details.get('title', ''),
+                'title': details.get('title', None),
                 'value': ', '.join(keys),
-                'note': details.get('note', '')
+                'note': details.get('note', None)
             }
         elif details['type'] == 'list_all':
             entries = [f"{data.get('title', key)} ({data.get('value', '')})" for key, data
                 in details['data'].items()]
             tabledata[entry]['data'][entry] = {
-                'title': details.get('title', ''),
+                'title': details.get('title', None),
                 'value': ', '.join(entries),
-                'note': details.get('note', '')
+                'note': details.get('note', None)
             }
         else:
             raise ValueError(f"The specified type '{details['type']}' for '{entry}' is not valid.")
 
-        if 'title' in tabledata[entry]:
-            del tabledata[entry]['title']
-        if 'note' in tabledata[entry]:
-            del tabledata[entry]['note']
+        tabledata[entry]['data'][entry] = util.fill_required_keys(tabledata[entry]['data'][entry], tc.REQUIRED_PARAM_KEYS)
+        # Return section entries to None, so no nasty double lines occur
+        tabledata[entry]['title'] = None
+        tabledata[entry]['note'] = None
 
         return tabledata
 
@@ -160,36 +163,44 @@ class ConfigTables:
         Headers should only be shown if the header metakey exists. It is expected as a list
         representing the table row.
         """
-        if 'header' in details:
-            header_value = details['header']
-            try:
-                header_list = [sanitize_str(item.strip()) for item in header_value.split(',')]
-                log.debug(f"Found a valid header list: {header_list}")
-            except Exception as e:
-                log.error(f"Failed to parse header value for {entry}: {e}")
-                header_list = []
+        if not details['header']:
+            return tabledata
 
-            if len(header_list) > 0:
-                header_dict = {'__header__': {
-                    'title': header_list[0],
-                    'value': header_list[1] if len(header_list) > 1 else '',
-                }}
-                if len(header_list) > 2:
-                    header_dict['__header__']['note'] = header_list[2]
-                # Positionally unpack dicts so __header__ is at the top
-                tabledata[entry]['data'] = {**header_dict, **tabledata[entry]['data']}
+        header_value = details['header']
+        try:
+            header_list = [util.sanitize_str(item.strip()) for item in header_value.split(',')]
+            log.debug(f"Found a valid header list: {header_list}")
+        except Exception as e:
+            log.error(f"Failed to parse header value for {entry}: {e}")
+            header_list = []
+
+        if len(header_list) > 0:
+
+            header_dict = {'__header__': {
+                'title': header_list[0],
+                'value': header_list[1] if len(header_list) > 1 else '',
+            }}
+            header_dict['__header__'] = util.fill_required_keys(header_dict['__header__'], tc.REQUIRED_PARAM_KEYS)
+            if len(header_list) > 2:
+                header_dict['__header__']['note'] = header_list[2]
+            # Positionally unpack dicts so __header__ is at the top
+            tabledata[entry]['data'] = {**header_dict, **tabledata[entry]['data']}
         return tabledata
 
     def _handle_parent(self, tabledata, entry, details):
         # __parent: Table merging logic.
         # Should be the last thing processed so we're not trying to access a deleted dict
-        if 'parent' in details:
+        if details['parent']:
             parent_section = details['parent']
             if parent_section in tabledata:
-                if 'spacer' in details:
-                    tabledata[parent_section]['data'][f'{entry}{self.delimiter}spacer'] = {'value': '', 'title': ''}
-                if 'title' in details:
-                    tabledata[parent_section]['data'][f'{entry}{self.delimiter}title'] = {'value': '', 'title': details['title']}
+                if details['spacer']:
+                    spacer = util.fill_required_keys({}, tc.REQUIRED_PARAM_KEYS)
+                    tabledata[parent_section]['data'][f'{entry}{self.delimiter}spacer'] = spacer
+                if details['title']:
+                    title = {'value': '', 'title': details['title']}
+                    title = util.fill_required_keys(title, tc.REQUIRED_PARAM_KEYS)
+                    tabledata[parent_section]['data'][f'{entry}{self.delimiter}title'] = title
+
                 tabledata[parent_section]['data'].update(details['data'])
                 del tabledata[entry]
             else:
@@ -201,14 +212,14 @@ class ConfigTables:
         for entry, details in list(tabledata.items()):
             try:
                 # __ignore: We set the str value to a proper bool here, if it wasn't already.
-                if 'ignore' in tabledata[entry] and str(tabledata[entry]['ignore']).lower() == 'true':
+                if str(tabledata[entry]['ignore']).lower() == 'true':
                     tabledata[entry]['ignore'] = True
                     continue
                 else:
                     tabledata[entry]['ignore'] = False
 
                 # __toggle should be taken as a full dot-notated path to another config option.
-                if 'toggle' in details:
+                if details['toggle']:
                     toggle_parts = details['toggle'].split('.')
                     section_path = '.'.join(toggle_parts[:-1])
                     setting_key = toggle_parts[-1]
@@ -238,7 +249,7 @@ class ConfigTables:
 
                 keys_to_remove = []
                 for key, data in tabledata[entry]['data'].items():
-                    if data.get('ignore', False):
+                    if data['ignore']:
                         keys_to_remove.append(key)
                 for key in keys_to_remove:
                     del tabledata[entry]['data'][key]
@@ -247,13 +258,12 @@ class ConfigTables:
                     # The value entry check *should* be redundant
                     if 'value' not in tabledata[entry]['data'][key]:
                         continue
-                    if 'title' in data:
+                    if data['title']:
                         table_row = [tabledata[entry]['data'][key]['title'], data['value']]
                     else:
                         table_row = [key, data['value']]
 
-                    # Check for note key and append to table row if present
-                    if 'note' in data:
+                    if data['note']:
                         table_row.append(data['note'])
 
                     tabledata[entry]['tablerows'].append(table_row)

@@ -16,6 +16,7 @@
 #   list_all: Merges both keys and values: 'key1 (value1), key2, (value2)'
 # __wrap (int): (__type only) Wraps value entries every provided number of items.
 # __parent (section): dot notated path of another section to merge the table into.
+# __spacer (bool): Adds a blank line before showing the child data if __parent is provided.
 # __ignore (bool): Whether to completely ignore handling tables for the section.
 # __toggle (str): Point to any boolean option in a dot-notated path that
 #   acts as __ignore if false.

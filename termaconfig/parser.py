@@ -2,8 +2,9 @@
 
 import terminaltables3 as tt3
 
+import termaconfig as tc
 from termaconfig.exceptions import TableTypeError
-from termaconfig.utils import get_nested_value, sanitize_str, parse_string_values
+import termaconfig.utils as util
 
 class ConfigParser:
     """Creates a combined 'metaconf' dict containing all relevant info about a configuration.
@@ -34,8 +35,9 @@ class ConfigParser:
         if key_path and key_path not in metaconf:
             metaconf[key_path] = {}
             metaconf[key_path]['data'] = {}
+            metaconf[key_path] = util.fill_required_keys(metaconf[key_path], tc.REQUIRED_SEC_KEYS)
         for key, value in opperating_dict.items():
-            value = sanitize_str(value)
+            value = util.sanitize_str(value)
             current_keys = keys + [key]
             # parent_key is empty if there was nothing before delimiter (section metakey)
             parent_key = key.split(self.delimiter)[0]
@@ -43,7 +45,7 @@ class ConfigParser:
             value_from_config = None
             if parent_key:
                 try:
-                    value_from_config = sanitize_str(get_nested_value(config, keys + [parent_key]))
+                    value_from_config = util.sanitize_str(util.get_nested_value(config, keys + [parent_key]))
                 except KeyError:
                     metaconf[key_path]['data'][parent_key] = {'missing': True}
 
@@ -64,7 +66,8 @@ class ConfigParser:
             else:
                 data = metaconf[key_path]['data']
                 if not key in data:
-                    metaconf[key_path]['data'][key] = {}
+                    data[key] = {}
+                    data[key] = util.fill_required_keys(data[key], tc.REQUIRED_PARAM_KEYS)
                 data[key] = self.get_vtd_results(data[key], keys + [parent_key])
                 data[key] = self.get_spec_info(data[key], value)
                 data[key]['value'] = value_from_config
@@ -74,7 +77,7 @@ class ConfigParser:
     def get_vtd_results(self, data, keys):
         """Retrieves validation results and adds relevant `error` and `missing` entries."""
 
-        try: result = get_nested_value(self.vtd_result, keys)
+        try: result = util.get_nested_value(self.vtd_result, keys)
         except KeyError: result = True
 
         # Value is present and valid
@@ -94,28 +97,25 @@ class ConfigParser:
 
     def get_spec_info(self, data, spec_value):
         """Extracts type and constraints from the specification string."""
-        spec_type, spec_params = parse_string_values(spec_value)
+        spec_type, spec_params = util.parse_string_values(spec_value)
         # Handle both possible types of minmax entries (valueless and key=value pairs)
-        min_val, max_val = None, None
         if not isinstance(spec_params, dict):
             data.update({
                 'spec': spec_value,
-                'type': spec_type,
-                'min': min_val,
-                'max': max_val
+                'type': spec_type
             })
             return data
         for k, v in spec_params.items():
             if v is None:
-                if min_val is None:
-                    min_val = k
+                if data['min'] is None:
+                    data['min'] = k
                 else:
-                    max_val = k
+                    data['max'] = k
                     break
         if 'min' in spec_params:
-            min_val = spec_params['min']
+            data['min'] = spec_params['min']
         if 'max' in spec_params:
-            max_val = spec_params['max']
+            data['max'] = spec_params['max']
 
         if 'default' in spec_params:
             default = spec_params['default']
@@ -124,9 +124,7 @@ class ConfigParser:
         data.update({
             'spec': spec_value,
             'type': spec_type,
-            'default': default,
-            'min': min_val,
-            'max': max_val
+            'default': default
         })
 
         return data
