@@ -1,12 +1,12 @@
 ## What is *TermaConfig*
 
-TermaConfig started as an idea to have a prettier, more dynamic way of displaying configuration content to users. It started as a (lackluster) system of printing out info in a more data-driven manor, then, as many projects do, expanded in scope and ended up becoming its own branching project.
+TermaConfig began as an idea to have a prettier, more dynamic way of displaying configuration content to users. In early concepts it provided a (lackluster) system of printing out info in a more data-driven manor, but I continued to refine it. Then, as many projects do, it expanded in scope and ultimately became its own branching project.
 
 ![screenshot](./screenshot.png)
 
 ## Installation
 
-ZenConfig is available as a pip package (`pip install termaconfig`), or whatever other cool thing you're using to manage Python packages.
+TermaConfig is available as a pip package (`pip install termaconfig`), or whatever other cool thing you're using to manage Python packages.
 
 ## Usage
 
@@ -14,7 +14,7 @@ There are two different approaches to using this library depending on how granul
 
 The second option is to implement your own wrapper, which is also fairly straightforward. Check the `__init__.py` code in the `TermaConfig` class for some ideas, especially if you want to take the same approach of extending `ConfigObj`.
 
-ZenConfig is built against ConfigObj and its spec, though it just opperates entirely with dicts under the hood, so it should (in theory) work with built-in tomllib or configparser to some degree. I may also add support for other libraries as well at some point.
+TermaConfig is built against ConfigObj and its spec, though it opperates entirely with dictionaries under the hood, so it should (in theory) work with built-in tomllib or configparser to some degree. Though, the main benefit is in the specification options, and currently TermaConfig does not have any independant way of handling such a thing. This may change in the future, however.
 
 ### Metakey format
 
@@ -34,6 +34,7 @@ __type (str): How the entries in the section are interpreted:
   list_all: Merges both keys and values: 'key1 (value1), key2, (value2)'
 __wrap (int): (__type only) Wraps value entries every provided number of items.
 __parent (section): dot notated path of another section to merge the table into.
+__spacer (bool): Adds a blank line before showing the child data if __parent is provided.
 __ignore (bool): Whether to completely ignore handling tables for the section.
 __toggle (str): Point to any boolean option in a dot-notated path that
   acts as __ignore if false.
@@ -47,7 +48,7 @@ Per-item options:
 ### (Very) Basic Code Example
 
 ```python
-from zenconfig import TermaConfig, ConfigValidationError
+from termaconfig import TermaConfig, ConfigValidationError
 
 # Can be paths or file-like objects
 if __name__ == '__main__':
