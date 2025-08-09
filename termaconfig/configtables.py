@@ -4,8 +4,6 @@ import logging as log
 from copy import deepcopy
 import terminaltables3 as tt3
 
-from printree import ptree
-
 import termaconfig as tc
 from termaconfig.exceptions import TableTypeError
 import termaconfig.utils as util

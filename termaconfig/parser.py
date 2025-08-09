@@ -1,9 +1,6 @@
 # termaconfig/parser.py
 
-import terminaltables3 as tt3
-
 import termaconfig as tc
-from termaconfig.exceptions import TableTypeError
 import termaconfig.utils as util
 
 class ConfigParser:
