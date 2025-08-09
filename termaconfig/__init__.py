@@ -17,6 +17,29 @@ from termaconfig.errortree import ErrorTree
 ConfigValidationError = ConfigValidationError
 TableTypeError = TableTypeError
 
+# All valid options should be initialized with None
+REQUIRED_SEC_KEYS = [
+    'title',
+    'header',
+    'type',
+    'wrap',
+    'parent',
+    'spacer',
+    'ignore',
+    'toggle'
+]
+REQUIRED_PARAM_KEYS = [
+    'default',
+    'type',
+    'min',
+    'max',
+    'error',
+    'missing',
+    'title',
+    'note',
+    'ignore'
+]
+
 class TermaConfig(ConfigObj):
     def __init__(self, config_file, spec_file, **kwargs):
         config_file, spec_file = self.validate_files(config_file, spec_file)
