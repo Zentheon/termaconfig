@@ -16,6 +16,10 @@ printree = "^0.2.1"
 [tool.poetry.group.test.dependencies]
 pytest = "^8.4.1"
 
+[tool.ruff]
+# Default of 88 is a little low.
+line-length = 100
+
 [tool.pyright]
 venvPath = "./venv"
 venv = "venv"

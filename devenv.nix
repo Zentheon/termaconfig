@@ -9,7 +9,10 @@
   env.GREET = "devenv";
 
   # https://devenv.sh/packages/
-  packages = [ pkgs.git ];
+  packages = [
+    pkgs.git
+    pkgs.python312Packages.ruff
+  ];
 
   # Secrets can be set in an .env file. Change to true if needed.
   # https://devenv.sh/reference/options/#dotenvenable
@@ -45,8 +48,37 @@
 
   # https://devenv.sh/tests/
   enterTest = ''
-    echo "Running tests"
-    git --version | grep --color=auto "${pkgs.git.version}"
+    echo "Starting tests..."
+    echo ":: Running 'poetry install'"
+    poetry install
+
+    echo ":: Running import checks"
+    cat << 'EOF' | python3 -
+    #!/usr/bin/env python3
+
+    # Trying native packages should be entirely unnecessary, but might as well sanity check.
+    packages = [
+        'os',
+        'logging',
+        'terminaltables3',
+        'printree',
+        'configobj'
+    ]
+
+    # Loop through the packages list.
+    missing_packages = []
+    for package in packages:
+        try:
+            __import__(package)
+        except ImportError:
+            missing_packages.append(package)
+
+    if missing_packages:
+        print(f"The following packages failed to import: {', '.join(missing_packages)}")
+        exit(1)
+    else:
+        print("All required packages are available.")
+    EOF
   '';
 
   # https://devenv.sh/git-hooks/

@@ -1,19 +1,18 @@
 # example.py
 
 import logging as log
-from terminaltables3 import AsciiTable, DoubleTable
 
-from termaconfig import TermaConfig, ConfigValidationError
+from terminaltables3 import DoubleTable
+
+from termaconfig import ConfigValidationError, TermaConfig
 
 log.basicConfig(
-    level = log.INFO,
-    format = '%(asctime)s:%(name)s:%(levelname)s: %(message)s',
-    datefmt = '%H:%M:%S'
+    level=log.INFO, format="%(asctime)s:%(name)s:%(levelname)s: %(message)s", datefmt="%H:%M:%S"
 )
 
-if __name__ == '__main__':
-    config_path = 'example-config.toml'
-    spec_path = 'example-spec.toml'
+if __name__ == "__main__":
+    config_path = "example-config.toml"
+    spec_path = "example-spec.toml"
 
     try:
         config = TermaConfig(
@@ -22,8 +21,8 @@ if __name__ == '__main__':
             # tabletype can be any valid terminaltables3 class instance.
             # Try passing another! Another valid option is AsciiTable
             # SingleTable is used by default if none was provided.
-            tabletype = DoubleTable,
-            logging = False
+            tabletype=DoubleTable,
+            logging=False,
         )
     except ConfigValidationError:
         print()
@@ -31,4 +30,4 @@ if __name__ == '__main__':
         exit()
 
     print()
-    print("Here's the value of 'option1' in 'basic':", config['basic']['option1'])
+    print("Here's the value of 'option1' in 'basic':", config["basic"]["option1"])

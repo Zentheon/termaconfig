@@ -1,5 +1,6 @@
 # termaconfig/utils.py
 
+
 def preprocess_config(config_data):
     """Preprocesses configuration data by stripping quotes from values and trimming whitespace.
 
@@ -10,9 +11,9 @@ def preprocess_config(config_data):
         list: A list of modified lines with quotes stripped and whitespace trimmed.
     """
     modified_lines = []
-    for line in config_data.read().split('\n'):
-        if '=' in line:
-            key, value = line.split('=', 1)
+    for line in config_data.read().split("\n"):
+        if "=" in line:
+            key, value = line.split("=", 1)
             key = key.strip()
             value = strip_quotes(value.strip())
             modified_line = f"{key}={value}"
@@ -20,6 +21,7 @@ def preprocess_config(config_data):
         else:
             modified_lines.append(line)
     return modified_lines
+
 
 def get_nested_value(dictionary, keys):
     """Searches for a value in a dict using the provided list of keys as the search path.
@@ -35,6 +37,7 @@ def get_nested_value(dictionary, keys):
             raise KeyError(f"Path {keys} not found in dictionary.")
         dictionary = dictionary.get(key)
     return dictionary
+
 
 def sanitize_str(input_data):
     """Sanitizes a given input by converting it into a consistent, easy to read string.
@@ -56,13 +59,13 @@ def sanitize_str(input_data):
     """
     if isinstance(input_data, str):
         # Normalizes formatting, such as escaped newline codes, ect.
-        sanitized_str = input_data.encode('latin-1', 'backslashreplace').decode('unicode-escape')
+        sanitized_str = input_data.encode("latin-1", "backslashreplace").decode("unicode-escape")
         # Remove any surrounding quotes
         sanitized_str = sanitized_str.strip('"').strip("'")
         return sanitized_str
     elif isinstance(input_data, list):
         # Convert list to a string with each element separated by ', '
-        return ', '.join(map(sanitize_str, input_data))
+        return ", ".join(map(sanitize_str, input_data))
     elif isinstance(input_data, dict):
         # Recursively sanitize dictionary values
         #
@@ -76,11 +79,13 @@ def sanitize_str(input_data):
     else:
         raise ValueError(f"Unsupported data type: {type(input_data)}")
 
+
 def fill_required_keys(input_dict, required_keys):
     for key in required_keys:
         if key not in input_dict:
             input_dict[key] = None
     return input_dict
+
 
 def join_wrapped_list(items, entries_per_line):
     """Joins a list into a string with items separated by commas and wrapped to multiple lines."""
@@ -89,10 +94,11 @@ def join_wrapped_list(items, entries_per_line):
 
     result = []
     for i in range(0, len(items), entries_per_line):
-        line = ', '.join(map(str, items[i:i + entries_per_line]))
+        line = ", ".join(map(str, items[i : i + entries_per_line]))
         result.append(line)
 
     return "\n".join(result)
+
 
 def strip_quotes(input_string):
     """Strips leading and trailing quotes from a string if they are the same type (single or double).
@@ -109,6 +115,7 @@ def strip_quotes(input_string):
         return input_string[1:-1]
     else:
         return input_string
+
 
 def split_dot_notated_keys(input_dict, container_key=None):
     """Splits keys in a dictionary that are dot-notated into nested dictionaries.
@@ -142,13 +149,14 @@ def split_dot_notated_keys(input_dict, container_key=None):
             current_dict[parent_key] = value
 
     for key, value in input_dict.items():
-        if isinstance(key, str) and '.' in key:
-            key_parts = key.split('.')
+        if isinstance(key, str) and "." in key:
+            key_parts = key.split(".")
             insert_into_result(key_parts, value, result)
         else:
             result[key] = value
 
     return result
+
 
 def strip_metakeys(input_dict, delimiter):
     """Takes an input config dict and removes keys with the delimiter in them. Use the returned spec to run validation on."""
@@ -162,6 +170,7 @@ def strip_metakeys(input_dict, delimiter):
             else:
                 stripped_spec[key] = value
     return stripped_spec
+
 
 def squash_true_dicts(in_dict):
     """Recursively squashes a dictionary into a single True value if all containing keys are True. Modifies nothing otherwise."""
@@ -178,6 +187,7 @@ def squash_true_dicts(in_dict):
             break
 
     return True if all_true else in_dict
+
 
 def remove_true_keys(input_dict):
     """Recursively removes all keys from a dictionary where the value is True.
@@ -200,6 +210,7 @@ def remove_true_keys(input_dict):
 
     return result
 
+
 def parse_string_values(input_str):
     """Extracts and returns a dict object from a string formatted as '{any string}(key1=value1,key2=value2,...)'.
 
@@ -214,30 +225,32 @@ def parse_string_values(input_str):
     Raises:
         ValueError: If the input string format is incorrect or if there are invalid key-value pairs.
     """
-    try: index = input_str.index('(')
-    except ValueError: return input_str, None
+    try:
+        index = input_str.index("(")
+    except ValueError:
+        return input_str, None
 
     parent_key = input_str[:index]
     # Get second half (value) of the str. Also trim off the trailing bracket
-    tuple = input_str[index + 1:][:-1]
+    tuple = input_str[index + 1 :][:-1]
 
     # Handle nested tuple-like objects
-    open_bracket_index = tuple.find('(')
+    open_bracket_index = tuple.find("(")
     if open_bracket_index != -1:
-        close_bracket_index = tuple.find(')', open_bracket_index + 1)
+        close_bracket_index = tuple.find(")", open_bracket_index + 1)
         if close_bracket_index == -1:
             raise ValueError(f"{input_str} is not valid: Opening bracket with no closer")
-        sub_list = tuple[open_bracket_index + 1:close_bracket_index]
+        sub_list = tuple[open_bracket_index + 1 : close_bracket_index]
         # Temporarily swap out commas for double semicolon so the list as treated as once item
-        new_sub_list = sub_list.replace(',', ';;')
+        new_sub_list = sub_list.replace(",", ";;")
         tuple = tuple.replace(sub_list, new_sub_list)
 
-    items = tuple.split(',')
+    items = tuple.split(",")
     value_dict = {}
     for idx, item in enumerate(items):
         item = strip_quotes(item.strip())
 
-        item_parts = item.split('=')
+        item_parts = item.split("=")
         # Items with no values
         if len(item_parts) == 1:
             key = item_parts[0].strip()
@@ -249,7 +262,7 @@ def parse_string_values(input_str):
         else:
             key, val = item_parts
             key = key.strip()
-            val = val.strip().strip('"').replace(';;', ',')
+            val = val.strip().strip('"').replace(";;", ",")
 
         value_dict[key] = val
 
