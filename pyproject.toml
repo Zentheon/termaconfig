@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "termaconfig"
-version = "1.0.0"
+version = "1.0.1"
 description = "Create pretty representations of your configs"
 authors = ["Zentheon <zentheon@mailbox.org>"]
 homepage = "https://github.com/zentheon/termaconfig"
