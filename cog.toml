@@ -25,7 +25,7 @@ post_package_bump_hooks = []
 
 [changelog]
 path = "CHANGELOG.md"
-template = "full_hash"
+template = "./changelog-template"
 authors = []
 
 [bump_profiles]
