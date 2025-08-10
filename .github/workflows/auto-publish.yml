@@ -1,5 +1,13 @@
 name: Publish
 
+# This workflow has two jobs:
+# pypi-publish:
+#   Sets up a python build env with poetry, runs tests and publishes to PyPI.
+#   Also uploads built artifacts for other jobs.
+# github-publish:
+#   Fetches build-artifact and checks out CHANGELOG.md. Retrieves the changelog 
+#   relating to the pushed tag and creates a new release with those inputs.
+
 on:
   push:
     tags:
@@ -43,10 +51,10 @@ jobs:
         run: poetry build
 
       - name: Upload build artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v4
         with:
           name: build-artifact
-          path: dist/*.tar.gz
+          path: dist/
 
       - name: Publish package to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
@@ -55,15 +63,26 @@ jobs:
     needs: pypi-publish
     runs-on: ubuntu-latest
     name: Create Github release
+    permissions:
+      contents: write
     steps:
+      - name: Checkout CHANGELOG.md
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout-cone-mode: false
+          sparse-checkout: CHANGELOG.md
+
       - name: Retrieve built package
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v4
         with:
           name: build-artifact
 
+      - name: Extract changelog notes
+        id: get_release_body
+        run: RELEASE_BODY=$(awk '/${{ github.ref_name }/ {flag=1; next} /^- - -/ {flag=0} flag' CHANGELOG.md)
+
       - name: Create release
-        uses: docker://antonyurchenko/git-release:latest
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v2
         with:
-          args: dist/*.tar.gz
+          body: ${{ steps.get_release_body.outputs.RELEASE_BODY }}
+          files: dist/*
