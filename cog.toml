@@ -8,7 +8,13 @@ generate_mono_repository_package_tags = true
 branch_whitelist = []
 skip_ci = "[skip ci]"
 skip_untracked = false
-pre_bump_hooks = []
+pre_bump_hooks = [
+    "echo running pytest",
+    "poetry run pytest",
+    "echo 'bumping from {{latest}} to {{version}}'",
+    "poetry version {{version}}",
+    "sed -i '/^__version__/ c__version__ = \"{{version}}\"' termaconfig/__init__.py"
+]
 post_bump_hooks = []
 pre_package_bump_hooks = []
 post_package_bump_hooks = []
@@ -19,6 +25,7 @@ post_package_bump_hooks = []
 
 [changelog]
 path = "CHANGELOG.md"
+template = "full_hash"
 authors = []
 
 [bump_profiles]
