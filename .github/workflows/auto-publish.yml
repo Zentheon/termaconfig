@@ -79,7 +79,7 @@ jobs:
 
       - name: Extract changelog notes
         id: get_release_body
-        run: RELEASE_BODY=$(awk '/${{ github.ref_name }/ {flag=1; next} /^- - -/ {flag=0} flag' CHANGELOG.md)
+        run: RELEASE_BODY=$(awk '/${{ github.ref_name }}/ {flag=1; next} /^- - -/ {flag=0} flag' CHANGELOG.md)
 
       - name: Create release
         uses: softprops/action-gh-release@v2
