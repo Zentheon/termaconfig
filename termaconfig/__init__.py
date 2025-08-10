@@ -1,5 +1,10 @@
 # termaconfig/__init__.py
 
+__name__ = "termaconfig"
+__version__ = "test"
+__authors__ = ["Zentheon <zentheon@mailbox.org>"]
+__license__ = "GPL-3.0"
+
 import io
 import logging as log
 

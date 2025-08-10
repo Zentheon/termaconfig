@@ -11,6 +11,7 @@
   # https://devenv.sh/packages/
   packages = [
     pkgs.git
+    pkgs.cocogitto
     pkgs.python312Packages.ruff
   ];
 
